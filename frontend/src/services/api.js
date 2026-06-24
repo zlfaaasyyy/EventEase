@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = 'http://localhost:8000/api'
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -16,7 +16,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && localStorage.getItem('token')) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
@@ -27,20 +27,22 @@ api.interceptors.response.use(
 
 // ─── Auth ───────────────────────────────────────────────
 export const authAPI = {
-  login:    (data) => api.post('/auth/login', data),
-  register: (data) => api.post('/auth/register', data),
-  me:       ()     => api.get('/auth/me'),
+  login:    (data) => api.post('/login', data),
+  register: (data) => api.post('/register', data),
+  me:       ()     => api.get('/users/me'),
 }
 
 // ─── Events ─────────────────────────────────────────────
 export const eventsAPI = {
   getAll:     (params) => api.get('/events', { params }),
   getById:    (id)     => api.get(`/events/${id}`),
-  create:     (data)   => api.post('/events', data),
-  update:     (id, d)  => api.put(`/events/${id}`, d),
-  delete:     (id)     => api.delete(`/events/${id}`),
-  publish:    (id)     => api.patch(`/events/${id}/publish`),
-  getMyEvents:()       => api.get('/events/my'),
+  getRecommended: ()   => api.get('/events/recommended/me'),
+  create:     (data)   => api.post('/organizer/events', data),
+  update:     (id, d)  => api.put(`/organizer/events/${id}`, d),
+  delete:     (id)     => api.delete(`/organizer/events/${id}`),
+  publish:    (id)     => api.patch(`/organizer/events/${id}/publish`),
+  unpublish:  (id)     => api.patch(`/organizer/events/${id}/unpublish`),
+  getMyEvents:()       => api.get('/organizer/events'),
 }
 
 // ─── Categories ─────────────────────────────────────────
@@ -79,8 +81,9 @@ export const paymentsAPI = {
 
 // ─── Attendance ─────────────────────────────────────────
 export const attendanceAPI = {
-  getByEvent: (eventId)      => api.get(`/events/${eventId}/attendance`),
-  checkIn:    (registrationId) => api.post(`/registrations/${registrationId}/checkin`),
+  getByEvent: (eventId)         => api.get(`/organizer/events/${eventId}/attendance`),
+  checkIn:    (registrationId)  => api.patch(`/organizer/registrations/${registrationId}/check-in`),
+  scan:       (data)            => api.post('/organizer/attendance/scan', data),
 }
 
 // ─── Feedback ───────────────────────────────────────────

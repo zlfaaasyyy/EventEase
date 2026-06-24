@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && localStorage.getItem('token')) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
@@ -33,8 +33,10 @@ api.interceptors.response.use(
 export const authAPI = {
   login:    (data) => api.post('/login', data),
   register: (data) => api.post('/register', data),
-  // Tidak ada endpoint /auth/me di backend. Gunakan usersAPI.getMe() (-> /users/me)
-  // untuk mengambil data user yang sedang login.
+  // Tidak ada endpoint /auth/me di backend. "me" di sini hanyalah alias
+  // ke /users/me (sama dengan usersAPI.getMe), disediakan untuk kompatibilitas
+  // kalau ada komponen yang sudah memanggil authAPI.me().
+  me:       ()     => api.get('/users/me'),
 }
 
 // ─── Events ─────────────────────────────────────────────
@@ -91,8 +93,12 @@ export const paymentsAPI = {
 }
 
 // ─── Attendance / Check-in ──────────────────────────────
-// Backend TIDAK punya /events/{id}/attendance atau /registrations/{id}/checkin.
-// Yang benar ada di bawah /organizer/...
+// Backend TIDAK punya /events/{id}/attendance atau /registrations/{id}/checkin
+// dengan POST. Endpoint yang benar:
+//   GET   /organizer/events/{eventId}/attendance        -> daftar attendance
+//   POST  /organizer/attendance/check-in                -> check-in via registration_id di body (untuk kamera scan)
+//   POST  /organizer/attendance/scan                     -> alias check-in via scan (sama persis dgn check-in)
+//   PATCH /organizer/registrations/{registrationId}/check-in -> check-in manual lewat ID di URL
 export const attendanceAPI = {
   getByEvent:    (eventId, params) => api.get(`/organizer/events/${eventId}/attendance`, { params }),
   checkIn:       (registrationId)  => api.post('/organizer/attendance/check-in', { registration_id: registrationId }),

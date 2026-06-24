@@ -31,6 +31,7 @@ export default function Navbar() {
   const getDashboardPath = () => {
     if (user?.role === 'admin') return '/admin'
     if (user?.role === 'organizer') return '/organizer'
+    if (user?.role === 'user') return '/my-registrations'
     return '/'
   }
 
@@ -66,7 +67,7 @@ export default function Navbar() {
             <Link
               to={getDashboardPath()}
               className={`text-body-md py-2 transition-colors duration-200 font-medium ${
-                location.pathname.startsWith('/admin') || location.pathname.startsWith('/organizer')
+                location.pathname.startsWith('/admin') || location.pathname.startsWith('/organizer') || location.pathname.startsWith('/my-registrations')
                   ? 'text-primary border-b-2 border-primary font-bold' 
                   : 'text-on-surface-variant hover:bg-surface-container-high px-2 rounded'
               }`}

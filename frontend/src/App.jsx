@@ -8,6 +8,13 @@ import RegisterPage from './pages/RegisterPage'
 import EventDetailPage from './pages/EventDetailPage'
 import BrowseEventsPage from './pages/BrowseEventsPage'
 
+// User (regular user) pages
+import MyTicketsPage from './pages/user/MyTicketsPage'
+import MyRegistrationsPage from './pages/user/MyRegistrationsPage'
+import PaymentPage from './pages/user/PaymentPage'
+import UserProfilePage from './pages/user/UserProfilePage'
+import GiveFeedbackPage from './pages/user/GiveFeedbackPage'
+
 // Organizer pages
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard'
 import CreateEventPage from './pages/organizer/CreateEventPage'
@@ -38,6 +45,33 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/events" element={<BrowseEventsPage />} />
       <Route path="/events/:id" element={<EventDetailPage />} />
+
+      {/* Regular User (role: "user") */}
+      <Route path="/my-tickets" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <MyTicketsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/my-registrations" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <MyRegistrationsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/payment/:registrationId" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <PaymentPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute allowedRoles={['user', 'organizer', 'admin']}>
+          <UserProfilePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/events/:id/feedback" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <GiveFeedbackPage />
+        </ProtectedRoute>
+      } />
 
       {/* Organizer */}
       <Route path="/organizer" element={

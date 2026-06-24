@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 export default function RegisterPage() {
   const { register, loading } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'user' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', role: 'user' })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -22,7 +22,22 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    const result = await register(form)
+
+    if (form.password !== form.confirmPassword) {
+      setError('Password and confirmation do not match')
+      return
+    }
+
+    // Backend (RegisterSchema) expects "confirm_password", not "confirmPassword"
+    const payload = {
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      confirm_password: form.confirmPassword,
+      role: form.role,
+    }
+
+    const result = await register(payload)
     if (result.success) {
       setSuccess('Account created successfully! Redirecting to login...')
       setTimeout(() => navigate('/login'), 1500)
@@ -132,6 +147,27 @@ export default function RegisterPage() {
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </span>
                 </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-xs">
+              <label className="text-label-md text-on-surface block" htmlFor="confirmPassword"> Confirm Password</label>
+              <div className="relative group">
+                <span className="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">
+                  lock
+                </span>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="  Re-enter your password"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  minLength={8}
+                  className="w-full pl-xl pr-12 py-md bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-body-md"
+                />
               </div>
             </div>
 

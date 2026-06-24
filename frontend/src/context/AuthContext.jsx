@@ -3,6 +3,24 @@ import { authAPI } from '../services/api'
 
 const AuthContext = createContext(null)
 
+// FastAPI mengembalikan `detail` sebagai STRING untuk error biasa (400/401/403/404),
+// tapi sebagai ARRAY OF OBJECTS untuk validation error (422). Helper ini menyatukan
+// keduanya jadi satu string yang aman untuk dirender di JSX.
+function extractErrorMessage(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (!detail) return fallback
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => {
+        const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : ''
+        return field ? `${field}: ${d.msg}` : d.msg
+      })
+      .join(', ')
+  }
+  return fallback
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -24,7 +42,7 @@ export function AuthProvider({ children }) {
       setUser(userData)
       return { success: true, user: userData }
     } catch (err) {
-      return { success: false, error: err.response?.data?.detail || 'Login failed' }
+      return { success: false, error: extractErrorMessage(err, 'Login failed') }
     } finally {
       setLoading(false)
     }
@@ -36,7 +54,7 @@ export function AuthProvider({ children }) {
       const res = await authAPI.register(data)
       return { success: true, data: res.data }
     } catch (err) {
-      return { success: false, error: err.response?.data?.detail || 'Registration failed' }
+      return { success: false, error: extractErrorMessage(err, 'Registration failed') }
     } finally {
       setLoading(false)
     }

@@ -158,6 +158,9 @@ def create_event(
     current_user: User = Depends(require_organizer)
 ):
 
+    allowed_initial_status = {"draft", "published"}
+    initial_status = payload.status if payload.status in allowed_initial_status else "draft"
+
     new_event = Event(
         title=payload.title,
         description=payload.description,
@@ -169,7 +172,7 @@ def create_event(
         banner_url=payload.banner_url,
         category_id=payload.category_id,
         organizer_id=current_user.id,
-        status="draft"
+        status=initial_status
     )
 
     db.add(new_event)

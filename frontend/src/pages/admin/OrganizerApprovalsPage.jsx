@@ -3,10 +3,10 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import { adminAPI } from '../../services/api'
 
 const MOCK_REQUESTS = [
-  { user_id: 10, name: 'Raka Wijaya', email: 'raka@company.com', created_at: '2025-05-18', status: 'pending', bio: 'Event organizer with 5 years experience in tech conferences.' },
-  { user_id: 11, name: 'Sari Puspita', email: 'sari@eventpro.id', created_at: '2025-05-19', status: 'pending', bio: 'Professional event planner specializing in corporate workshops.' },
-  { user_id: 12, name: 'Hendra Gunawan', email: 'hendra@hevents.com', created_at: '2025-05-17', status: 'approved', bio: 'Startup event creator based in Bandung.' },
-  { user_id: 13, name: 'Nita Maharani', email: 'nita@bali.id', created_at: '2025-05-15', status: 'rejected', bio: 'Online webinar host.' },
+  { id: 10, name: 'Raka Wijaya', email: 'raka@company.com', created_at: '2025-05-18', status: 'pending', bio: 'Event organizer with 5 years experience in tech conferences.' },
+  { id: 11, name: 'Sari Puspita', email: 'sari@eventpro.id', created_at: '2025-05-19', status: 'pending', bio: 'Professional event planner specializing in corporate workshops.' },
+  { id: 12, name: 'Hendra Gunawan', email: 'hendra@hevents.com', created_at: '2025-05-17', status: 'approved', bio: 'Startup event creator based in Bandung.' },
+  { id: 13, name: 'Nita Maharani', email: 'nita@bali.id', created_at: '2025-05-15', status: 'rejected', bio: 'Online webinar host.' },
 ]
 
 const STATUS_MAP = {
@@ -21,30 +21,27 @@ export default function OrganizerApprovalsPage() {
   const [loading, setLoading] = useState(null)
 
   useEffect(() => {
-    adminAPI.getPendingOrganizers()
+    adminAPI.getOrganizerApprovals({ status: null })
       .then((r) => {
         if (r.data?.length) {
-          setRequests((prev) => {
-            const ids = new Set(r.data.map((x) => x.user_id))
-            return [...r.data, ...prev.filter((x) => !ids.has(x.user_id) && x.status !== 'pending')]
-          })
+          setRequests(r.data)
+        } else {
+          setRequests([])
         }
       })
       .catch(() => {})
   }, [])
 
-  const handleAction = async (userId, action) => {
-    setLoading(`${userId}-${action}`)
+  const handleAction = async (id, action) => {
+    setLoading(`${id}-${action}`)
     try {
-      if (action === 'approve') await adminAPI.approveOrganizer(userId)
-      else await adminAPI.rejectOrganizer(userId)
+      if (action === 'approve') await adminAPI.approveOrganizer(id)
+      else await adminAPI.rejectOrganizer(id)
       setRequests((prev) =>
-        prev.map((r) => r.user_id === userId ? { ...r, status: action === 'approve' ? 'approved' : 'rejected' } : r)
+        prev.map((r) => r.id === id ? { ...r, status: action === 'approve' ? 'approved' : 'rejected' } : r)
       )
-    } catch {
-      setRequests((prev) =>
-        prev.map((r) => r.user_id === userId ? { ...r, status: action === 'approve' ? 'approved' : 'rejected' } : r)
-      )
+    } catch (err) {
+      alert(err.response?.data?.detail || `Failed to ${action} organizer`)
     } finally {
       setLoading(null)
     }
@@ -94,7 +91,7 @@ export default function OrganizerApprovalsPage() {
           {filtered.map((req) => {
             const sm = STATUS_MAP[req.status] || STATUS_MAP.pending
             return (
-              <div key={req.user_id} className="bg-surface rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md">
+              <div key={req.id} className="bg-surface rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md">
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-md">
@@ -119,25 +116,27 @@ export default function OrganizerApprovalsPage() {
                 )}
 
                 {/* Date */}
-                <p className="text-label-sm text-outline flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                  Requested on{' '}
-                  {new Date(req.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </p>
+                {req.created_at && (
+                  <p className="text-label-sm text-outline flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                    Requested on{' '}
+                    {new Date(req.created_at).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </p>
+                )}
 
                 {/* Actions */}
                 {req.status === 'pending' && (
                   <div className="flex gap-sm mt-auto">
                     <button
                       disabled={!!loading}
-                      onClick={() => handleAction(req.user_id, 'approve')}
+                      onClick={() => handleAction(req.id, 'approve')}
                       className="flex-1 py-2.5 bg-primary text-on-primary text-label-md font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-xs disabled:opacity-50"
                     >
-                      {loading === `${req.user_id}-approve`
+                      {loading === `${req.id}-approve`
                         ? <span className="material-symbols-outlined animate-spin text-[16px]">refresh</span>
                         : <span className="material-symbols-outlined text-[16px]">check_circle</span>
                       }
@@ -145,10 +144,10 @@ export default function OrganizerApprovalsPage() {
                     </button>
                     <button
                       disabled={!!loading}
-                      onClick={() => handleAction(req.user_id, 'reject')}
+                      onClick={() => handleAction(req.id, 'reject')}
                       className="flex-1 py-2.5 bg-error-container text-error text-label-md font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-xs disabled:opacity-50"
                     >
-                      {loading === `${req.user_id}-reject`
+                      {loading === `${req.id}-reject`
                         ? <span className="material-symbols-outlined animate-spin text-[16px]">refresh</span>
                         : <span className="material-symbols-outlined text-[16px]">cancel</span>
                       }

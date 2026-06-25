@@ -18,6 +18,7 @@ class EventCreate(BaseModel):
     address: Optional[str] = None
     banner_url: Optional[str] = None
     category_id: Optional[int] = None
+    status: Optional[str] = "draft"
     tickets: Optional[List[TicketCreate]] = []
 
 

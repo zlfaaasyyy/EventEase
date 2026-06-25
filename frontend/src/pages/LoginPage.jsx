@@ -22,7 +22,7 @@ export default function LoginPage() {
       const role = result.user.role
       if (role === 'admin') navigate('/admin')
       else if (role === 'organizer') navigate('/organizer')
-      else navigate('/')
+      else navigate('/user')
     } else {
       setError(result.error)
     }

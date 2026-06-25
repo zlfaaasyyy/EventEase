@@ -50,57 +50,39 @@ export default function AdminDashboard() {
   const [pendingOrganizers, setPendingOrganizers] = useState(MOCK_PENDING)
 
   useEffect(() => {
-    adminAPI.getSystemReports().then((r) => setStats(r.data)).catch(() => {})
-    adminAPI.getAllEvents().then((r) => setRecentEvents(r.data?.slice(0, 5))).catch(() => {})
-    adminAPI.getPendingOrganizers().then((r) => setPendingOrganizers(r.data)).catch(() => {})
+    if (typeof adminAPI.getSystemReports === 'function') {
+      adminAPI.getSystemReports().then(r => setStats(r.data)).catch(() => {})
+    }
+    if (typeof adminAPI.getAllEvents === 'function') {
+      adminAPI.getAllEvents().then(r => {
+        if (Array.isArray(r.data)) setRecentEvents(r.data.slice(0, 5))
+      }).catch(() => {})
+    }
+    if (typeof adminAPI.getPendingOrganizers === 'function') {
+      adminAPI.getPendingOrganizers().then(r => {
+        if (Array.isArray(r.data)) setPendingOrganizers(r.data)
+      }).catch(() => {})
+    }
   }, [])
 
   const handleApprove = async (userId) => {
-    try {
-      await adminAPI.approveOrganizer(userId)
-      setPendingOrganizers((prev) => prev.filter((o) => o.user_id !== userId))
-    } catch { alert('Gagal approve organizer') }
+    try { await adminAPI.approveOrganizer(userId) } catch {}
+    setPendingOrganizers(prev => prev.filter(o => o.user_id !== userId))
   }
 
   const handleReject = async (userId) => {
-    try {
-      await adminAPI.rejectOrganizer(userId)
-      setPendingOrganizers((prev) => prev.filter((o) => o.user_id !== userId))
-    } catch { alert('Gagal reject organizer') }
+    try { await adminAPI.rejectOrganizer(userId) } catch {}
+    setPendingOrganizers(prev => prev.filter(o => o.user_id !== userId))
   }
 
   return (
     <DashboardLayout title="Admin Dashboard">
       {/* Stats grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-lg mb-xl">
-        <StatCard
-          label="Total Users"
-          value={stats.totalUsers?.toLocaleString('id-ID')}
-          icon="group"
-          color="bg-primary-fixed text-primary"
-          sub="Registered accounts"
-        />
-        <StatCard
-          label="Total Events"
-          value={stats.totalEvents?.toLocaleString('id-ID')}
-          icon="event"
-          color="bg-secondary-fixed text-secondary"
-          sub={`${stats.activeEvents} active now`}
-        />
-        <StatCard
-          label="Total Organizers"
-          value={stats.totalOrganizers}
-          icon="corporate_fare"
-          color="bg-tertiary-fixed text-on-tertiary-fixed-variant"
-          sub={`${stats.pendingOrganizers} pending approval`}
-        />
-        <StatCard
-          label="Total Revenue"
-          value={`Rp${(stats.totalRevenue / 1_000_000).toFixed(1)}M`}
-          icon="payments"
-          color="bg-primary-fixed text-primary"
-          sub="All-time platform revenue"
-        />
+        <StatCard label="Total Users" value={stats.totalUsers?.toLocaleString('id-ID')} icon="group" color="bg-primary-fixed text-primary" sub="Registered accounts" />
+        <StatCard label="Total Events" value={stats.totalEvents?.toLocaleString('id-ID')} icon="event" color="bg-secondary-fixed text-secondary" sub={`${stats.activeEvents} active now`} />
+        <StatCard label="Total Organizers" value={stats.totalOrganizers} icon="corporate_fare" color="bg-tertiary-fixed text-on-tertiary-fixed-variant" sub={`${stats.pendingOrganizers} pending approval`} />
+        <StatCard label="Total Revenue" value={`Rp${((stats.totalRevenue || 0) / 1_000_000).toFixed(1)}M`} icon="payments" color="bg-primary-fixed text-primary" sub="All-time platform revenue" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
@@ -108,9 +90,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
           <div className="p-lg border-b border-outline-variant flex justify-between items-center">
             <h2 className="text-title-lg font-bold text-on-surface">Recent Events</h2>
-            <Link to="/admin/events" className="text-primary font-bold text-label-md hover:underline">
-              View All
-            </Link>
+            <Link to="/admin/events" className="text-primary font-bold text-label-md hover:underline">View All</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -124,7 +104,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {recentEvents.map((ev) => (
+                {recentEvents.map(ev => (
                   <tr key={ev.event_id} className="hover:bg-surface-container-low transition-colors">
                     <td className="px-lg py-md text-body-md font-medium text-on-surface">{ev.title}</td>
                     <td className="px-lg py-md text-body-md text-on-surface-variant">{ev.organizer_name}</td>
@@ -148,11 +128,8 @@ export default function AdminDashboard() {
         <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
           <div className="p-lg border-b border-outline-variant flex justify-between items-center">
             <h2 className="text-title-lg font-bold text-on-surface">Pending Approvals</h2>
-            <Link to="/admin/organizers" className="text-primary font-bold text-label-md hover:underline">
-              View All
-            </Link>
+            <Link to="/admin/organizers" className="text-primary font-bold text-label-md hover:underline">View All</Link>
           </div>
-
           {pendingOrganizers.length === 0 ? (
             <div className="text-center py-xl px-lg">
               <span className="material-symbols-outlined text-[40px] text-outline">check_circle</span>
@@ -160,11 +137,11 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="divide-y divide-outline-variant">
-              {pendingOrganizers.map((org) => (
+              {pendingOrganizers.map(org => (
                 <div key={org.user_id} className="p-lg space-y-md">
                   <div className="flex items-center gap-md">
                     <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary font-bold">
-                      {org.name.charAt(0)}
+                      {org.name?.charAt(0)}
                     </div>
                     <div className="min-w-0">
                       <p className="text-body-md font-bold text-on-surface truncate">{org.name}</p>
@@ -175,16 +152,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex gap-sm">
-                    <button
-                      onClick={() => handleApprove(org.user_id)}
-                      className="flex-1 py-2 bg-primary text-on-primary text-label-md font-bold rounded-lg hover:opacity-90 transition-all"
-                    >
+                    <button onClick={() => handleApprove(org.user_id)} className="flex-1 py-2 bg-primary text-on-primary text-label-md font-bold rounded-lg hover:opacity-90 transition-all">
                       Approve
                     </button>
-                    <button
-                      onClick={() => handleReject(org.user_id)}
-                      className="flex-1 py-2 bg-error-container text-error text-label-md font-bold rounded-lg hover:opacity-90 transition-all"
-                    >
+                    <button onClick={() => handleReject(org.user_id)} className="flex-1 py-2 bg-error-container text-error text-label-md font-bold rounded-lg hover:opacity-90 transition-all">
                       Reject
                     </button>
                   </div>
@@ -202,7 +173,7 @@ export default function AdminDashboard() {
           { to: '/admin/categories', icon: 'category', label: 'Categories', color: 'bg-secondary-fixed text-secondary' },
           { to: '/admin/organizers', icon: 'verified_user', label: 'Organizer Approval', color: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' },
           { to: '/admin/reports', icon: 'bar_chart', label: 'System Reports', color: 'bg-primary-fixed text-primary' },
-        ].map((item) => (
+        ].map(item => (
           <Link key={item.to} to={item.to}>
             <div className="bg-surface rounded-xl p-lg border border-outline-variant shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-md cursor-pointer group">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color} group-hover:scale-105 transition-transform`}>

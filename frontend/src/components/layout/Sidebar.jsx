@@ -5,7 +5,7 @@ const userLinks = [
   { to: '/user',               icon: 'dashboard',          label: 'Dashboard',        exact: true },
   { to: '/user/registrations', icon: 'calendar_month',     label: 'My Registrations'               },
   { to: '/user/tickets',       icon: 'confirmation_number',label: 'My Tickets'                     },
-  { to: '/events',             icon: 'explore',            label: 'Browse Events'                  },
+  { to: '/user/payments',      icon: 'payments',           label: 'Payments'                       },
   { to: '/user/feedback',      icon: 'rate_review',        label: 'Give Feedback'                  },
   { to: '/user/profile',       icon: 'manage_accounts',    label: 'Profile'                        },
 ]

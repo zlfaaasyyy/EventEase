@@ -41,6 +41,7 @@ export default function MyRegistrationsPage() {
     setError(null)
     try {
       const res = await registrationsAPI.getMyRegistrations()
+      console.log('REGISTRATIONS DATA:', res.data)
       let data = res.data
       if (filterStatus) data = data.filter(r => r.status === filterStatus)
       setRegistrations(data)

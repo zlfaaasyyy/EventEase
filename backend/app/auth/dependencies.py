@@ -78,4 +78,3 @@ require_admin = require_roles("admin")
 require_organizer = require_roles("organizer")
 require_organizer_or_admin = require_roles("organizer", "admin")
 require_user = require_roles("user")
-    

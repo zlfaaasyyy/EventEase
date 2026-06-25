@@ -1,18 +1,12 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { authAPI } from '../services/api'
 
 const AuthContext = createContext(null)
 
-// FastAPI mengembalikan `detail` sebagai STRING untuk error biasa (400/401/403/404),
-// tapi sebagai ARRAY OF OBJECTS untuk validation error (422). Helper ini menyatukan
-// keduanya jadi satu string yang aman untuk dirender di JSX.
 function extractErrorMessage(err, fallback) {
   const detail = err.response?.data?.detail
-
   if (!detail) return fallback
-
   if (typeof detail === 'string') return detail
-
   if (Array.isArray(detail)) {
     return detail
       .map((d) => {
@@ -21,7 +15,6 @@ function extractErrorMessage(err, fallback) {
       })
       .join(', ')
   }
-
   return fallback
 }
 
@@ -40,11 +33,26 @@ export function AuthProvider({ children }) {
     setLoading(true)
     try {
       const res = await authAPI.login({ email, password })
-      const { access_token, user: userData } = res.data
-      localStorage.setItem('token', access_token)
+      const data = res.data
+
+      // Backend return: { access_token, token_type, user: { id, name, email, role, status } }
+      const token = data.access_token
+      if (!token) {
+        return { success: false, error: 'Token tidak ditemukan.' }
+      }
+
+      // Normalize user object — backend pakai "id", kita pakai keduanya
+      const rawUser = data.user || {}
+      const userData = {
+        ...rawUser,
+        user_id: rawUser.id || rawUser.user_id,  // support keduanya
+      }
+
+      localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(userData))
       setUser(userData)
       return { success: true, user: userData }
+
     } catch (err) {
       return { success: false, error: extractErrorMessage(err, 'Login failed') }
     } finally {

@@ -50,29 +50,90 @@ export default function EventDetailPage() {
   }, [id])
 
   const fetchEvent = async () => {
+  setLoading(true)
+
+  try {
+    const res = await eventsAPI.getById(id)
+
+    let tickets = []
+    let feedback = []
+
     try {
-      const res = await eventsAPI.getById(id)
-      const data = res.data
       const ticketsRes = await ticketsAPI.getByEvent(id)
-      const feedbackRes = await feedbackAPI.getByEvent(id)
-      setEvent({ ...data, tickets: ticketsRes.data, feedback: feedbackRes.data })
-    } catch {
-      setEvent(MOCK_EVENT)
-    } finally {
-      setLoading(false)
+      tickets = ticketsRes.data || []
+    } catch (err) {
+      console.error('Failed loading tickets:', err)
     }
+
+    try {
+      const feedbackRes = await feedbackAPI.getByEvent(id)
+      feedback = feedbackRes.data || []
+    } catch (err) {
+      console.error('Failed loading feedback:', err)
+    }
+
+    setEvent({
+      ...res.data,
+      tickets,
+      feedback,
+    })
+  } catch (err) {
+    console.error('Failed loading event:', err)
+
+    setEvent({
+      title: 'Event Not Found',
+      description: 'The requested event could not be loaded.',
+      tickets: [],
+      feedback: [],
+    })
+  } finally {
+    setLoading(false)
+  }
+}
+
+  // const handleRegister = async () => {
+  //   if (!user) { window.location.href = '/login'; return }
+  //   if (!selectedTicket) { alert('Please select a ticket first'); return }
+  //   try {
+  //     await registrationsAPI.register({ event_id: id, ticket_id: selectedTicket.ticket_id })
+  //     alert('Registration successful! Check your bookings.')
+  //   } catch (e) {
+  //     alert(e.response?.data?.detail || 'Registration failed.')
+  //   }
+  // }
+
+const handleRegister = async () => {
+  if (!user) {
+    window.location.href = '/login'
+    return
   }
 
-  const handleRegister = async () => {
-    if (!user) { window.location.href = '/login'; return }
-    if (!selectedTicket) { alert('Please select a ticket first'); return }
-    try {
-      await registrationsAPI.register({ event_id: id, ticket_id: selectedTicket.ticket_id })
-      alert('Registration successful! Check your bookings.')
-    } catch (e) {
-      alert(e.response?.data?.detail || 'Registration failed.')
-    }
+  if (!selectedTicket) {
+    alert('Please select a ticket first')
+    return
   }
+
+  try {
+    const payload = {
+      event_id: Number(id),
+      ticket_id: Number(selectedTicket.id),
+    }
+
+    const res = await registrationsAPI.register(payload)
+
+    const registrationId = res.data.id
+
+    window.location.href = `/user/payment/${registrationId}`
+
+  } catch (e) {
+    console.error(e.response?.data)
+
+    alert(
+      e.response?.data?.detail ||
+      'Registration failed'
+    )
+  }
+}
 
   const total = selectedTicket ? selectedTicket.price : 0
   const available = selectedTicket ? selectedTicket.quota - selectedTicket.sold : null

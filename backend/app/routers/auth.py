@@ -8,7 +8,6 @@ from app.auth.jwt_handler import create_access_token
 from app.database import get_db
 from app.models.User import User
 from app.schemas.auth import RegisterSchema
-from app.auth.admin import ADMIN_DATA
 
 router = APIRouter()
 
@@ -81,35 +80,6 @@ def login(
     user: LoginSchema,
     db: Session = Depends(get_db)
 ):
-    if user.email == ADMIN_DATA["email"]:
-
-        if user.password != ADMIN_DATA["password"]:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid admin credentials"
-            )
-
-        token = create_access_token({
-            "id": 0,
-            "email": ADMIN_DATA["email"],
-            "role": "admin"
-        })
-
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user": {
-                "id": 0,
-                "name": ADMIN_DATA["name"],
-                "email": ADMIN_DATA["email"],
-                "role": "admin",
-                "status": "active"
-            }
-        }
-
-    # =======================
-    # LOGIN USER BIASA
-    # =======================
 
     existing_user = db.query(User).filter(
         User.email == user.email

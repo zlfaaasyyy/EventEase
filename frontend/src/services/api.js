@@ -20,9 +20,9 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401 && localStorage.getItem('token')) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+      // localStorage.removeItem('token')
+      // localStorage.removeItem('user')
+      // window.location.href = '/login'
     }
     return Promise.reject(err)
   }
@@ -142,29 +142,45 @@ export const reportsAPI = {
   organizerSummary:        ()        => api.get('/organizer/dashboard/summary'),
   eventReport:             (eventId) => api.get(`/organizer/events/${eventId}/reports`),
   organizerMonthly:        (params)  => api.get('/organizer/reports/monthly-growth', { params }),
+
   adminSystem:             ()        => api.get('/admin/reports/system'),
+  getSystemReports:        ()        => api.get('/admin/reports/system'),
+
   adminSystemExportCsv:    ()        => api.get('/admin/reports/system/export', { responseType: 'blob' }),
   adminCategoryPopularity: ()        => api.get('/admin/reports/categories-popularity'),
   adminMonthlyGrowth:      (params)  => api.get('/admin/reports/monthly-growth', { params }),
   adminTopOrganizers:      (params)  => api.get('/admin/reports/top-organizers', { params }),
   adminTopEvents:          (params)  => api.get('/admin/reports/top-events', { params }),
-  exportEventRegistrationsCsv: (eventId) =>
-    api.get(`/organizer/events/${eventId}/registrations/export`, { responseType: 'blob' }),
 }
 
 // ─── Admin ──────────────────────────────────────────────
 export const adminAPI = {
+  // Users
   getUsers:              (params) => api.get('/admin/users', { params }),
   getUserById:           (id)     => api.get(`/admin/users/${id}`),
   updateUserStatus:      (id, d)  => api.patch(`/admin/users/${id}/status`, d),
   updateUserRole:        (id, d)  => api.patch(`/admin/users/${id}/role`, d),
   deleteUser:            (id)     => api.delete(`/admin/users/${id}`),
+
+  // Organizer Approval
   getOrganizerApprovals: (params) => api.get('/admin/organizer-approvals', { params }),
+
+  // Alias untuk halaman lama
+  getPendingOrganizers:  (params) => api.get('/admin/organizer-approvals', { params }),
+
   approveOrganizer:      (id)     => api.patch(`/admin/organizer-approvals/${id}/approve`),
   rejectOrganizer:       (id)     => api.patch(`/admin/organizer-approvals/${id}/reject`),
+
+  // Events
   getAllEvents:          (params) => api.get('/admin/events', { params }),
   updateEventStatus:     (id, d)  => api.patch(`/admin/events/${id}/status`, d),
   deleteEvent:           (id)     => api.delete(`/admin/events/${id}`),
+
+  // Reports
+  getSystemReports:      ()       => api.get('/admin/reports/system'),
+
+  // Alias
+  getReports:            ()       => api.get('/admin/reports/system'),
 }
 
 export default api

@@ -11,6 +11,7 @@ import BrowseEventsPage from './pages/BrowseEventsPage'
 // User (regular user) pages
 import MyTicketsPage from './pages/user/MyTicketsPage'
 import MyRegistrationsPage from './pages/user/MyRegistrationsPage'
+import PaymentHistoryPage from './pages/user/PaymentHistoryPage'
 import PaymentPage from './pages/user/PaymentPage'
 import UserProfilePage from './pages/user/UserProfilePage'
 import GiveFeedbackPage from './pages/user/GiveFeedbackPage'
@@ -18,8 +19,12 @@ import GiveFeedbackPage from './pages/user/GiveFeedbackPage'
 // Organizer pages
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard'
 import CreateEventPage from './pages/organizer/CreateEventPage'
+import ManageTicketsPage from './pages/organizer/ManageTicketsPage'
+import RegistrationsListPage from './pages/organizer/RegistrationsListPage'
 import ManageAttendancePage from './pages/organizer/ManageAttendancePage'
 import EventFeedbackPage from './pages/organizer/EventFeedbackPage'
+import OrganizerReportsPage from './pages/organizer/OrganizerReportsPage'
+import OrganizerProfilePage from './pages/organizer/OrganizerProfilePage'
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -46,34 +51,44 @@ function AppRoutes() {
       <Route path="/events" element={<BrowseEventsPage />} />
       <Route path="/events/:id" element={<EventDetailPage />} />
 
-      {/* Regular User (role: "user") */}
-      <Route path="/my-tickets" element={
-        <ProtectedRoute allowedRoles={['user']}>
-          <MyTicketsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/my-registrations" element={
+      {/* Regular User (role: "user") -- paths match Sidebar.jsx's userLinks */}
+      <Route path="/user" element={
         <ProtectedRoute allowedRoles={['user']}>
           <MyRegistrationsPage />
         </ProtectedRoute>
       } />
-      <Route path="/payment/:registrationId" element={
+      <Route path="/user/registrations" element={
         <ProtectedRoute allowedRoles={['user']}>
-          <PaymentPage />
+          <MyRegistrationsPage />
         </ProtectedRoute>
       } />
-      <Route path="/profile" element={
-        <ProtectedRoute allowedRoles={['user', 'organizer', 'admin']}>
-          <UserProfilePage />
+      <Route path="/user/tickets" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <MyTicketsPage />
         </ProtectedRoute>
       } />
-      <Route path="/events/:id/feedback" element={
+      <Route path="/user/payments" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <PaymentHistoryPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/user/feedback" element={
         <ProtectedRoute allowedRoles={['user']}>
           <GiveFeedbackPage />
         </ProtectedRoute>
       } />
+      <Route path="/user/profile" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <UserProfilePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/user/payment/:registrationId" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <PaymentPage />
+        </ProtectedRoute>
+      } />
 
-      {/* Organizer */}
+      {/* Organizer -- paths match Sidebar.jsx's organizerLinks */}
       <Route path="/organizer" element={
         <ProtectedRoute allowedRoles={['organizer']}>
           <OrganizerDashboard />
@@ -82,6 +97,16 @@ function AppRoutes() {
       <Route path="/organizer/events/create" element={
         <ProtectedRoute allowedRoles={['organizer']}>
           <CreateEventPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/organizer/tickets" element={
+        <ProtectedRoute allowedRoles={['organizer']}>
+          <ManageTicketsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/organizer/registrations" element={
+        <ProtectedRoute allowedRoles={['organizer']}>
+          <RegistrationsListPage />
         </ProtectedRoute>
       } />
       <Route path="/organizer/events/:id/attendance" element={
@@ -94,8 +119,18 @@ function AppRoutes() {
           <EventFeedbackPage />
         </ProtectedRoute>
       } />
+      <Route path="/organizer/reports" element={
+        <ProtectedRoute allowedRoles={['organizer']}>
+          <OrganizerReportsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/organizer/profile" element={
+        <ProtectedRoute allowedRoles={['organizer']}>
+          <OrganizerProfilePage />
+        </ProtectedRoute>
+      } />
 
-      {/* Admin */}
+      {/* Admin -- paths match Sidebar.jsx's adminLinks */}
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminDashboard />

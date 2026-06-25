@@ -3,12 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { eventsAPI, categoriesAPI } from '../../services/api'
 
+function extractErrorMessage(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (!detail) return fallback
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map((d) => d.msg || JSON.stringify(d)).join(', ')
+  return fallback
+}
+
 const MOCK_CATEGORIES = [
-  { category_id: 1, category_name: 'Conference' },
-  { category_id: 2, category_name: 'Workshop' },
-  { category_id: 3, category_name: 'Seminar' },
-  { category_id: 4, category_name: 'Webinar' },
-  { category_id: 5, category_name: 'Training' },
+  { id: 1, category_name: 'Conference' },
+  { id: 2, category_name: 'Workshop' },
+  { id: 3, category_name: 'Seminar' },
+  { id: 4, category_name: 'Webinar' },
+  { id: 5, category_name: 'Training' },
 ]
 
 export default function CreateEventPage() {
@@ -48,10 +56,25 @@ export default function CreateEventPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await eventsAPI.create({ ...form, tickets })
+      const payload = {
+        title: form.title,
+        description: form.description,
+        location: form.location,
+        category_id: form.category_id ? Number(form.category_id) : null,
+        start_date: new Date(form.start_date).toISOString(),
+        end_date: form.end_date ? new Date(form.end_date).toISOString() : new Date(form.start_date).toISOString(),
+        status: form.status,
+        tickets: tickets.map((t) => ({
+          ticket_type: t.ticket_type,
+          price: Number(t.price) || 0,
+          quota: Number(t.quota) || 0,
+        })),
+      }
+
+      await eventsAPI.create(payload)
       navigate('/organizer')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create event')
+      setError(extractErrorMessage(err, 'Failed to create event'))
     } finally {
       setLoading(false)
     }
@@ -92,7 +115,7 @@ export default function CreateEventPage() {
                 <select name="category_id" required value={form.category_id} onChange={handleChange} className={inputClass}>
                   <option value="">Select category</option>
                   {categories.map((c) => (
-                    <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+                    <option key={c.id} value={c.id}>{c.category_name}</option>
                   ))}
                 </select>
               </div>

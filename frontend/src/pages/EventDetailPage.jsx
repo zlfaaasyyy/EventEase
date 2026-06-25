@@ -6,7 +6,7 @@ import { eventsAPI, ticketsAPI, registrationsAPI, feedbackAPI } from '../service
 import { useAuth } from '../context/AuthContext'
 
 const MOCK_EVENT = {
-  event_id: 1,
+  id: 1,
   title: 'Tech Summit 2025',
   description: 'Tech Summit 2025 is Indonesia\'s premier gathering for technopreneurs, developers, and industry leaders. Over three intensive days, we will explore the frontiers of Artificial Intelligence, Blockchain, and Sustainable Tech.\n\nJoin over 2,000 attendees for keynote sessions from global tech giants, hands-on workshops, and unparalleled networking opportunities. Whether you\'re a startup founder or a senior engineer, this summit offers the insights you need to navigate the rapidly evolving digital landscape.',
   start_date: '2025-05-20',
@@ -16,11 +16,11 @@ const MOCK_EVENT = {
   organizer_name: 'TechOrg Indonesia',
   status: 'published',
   tickets: [
-    { ticket_id: 1, ticket_type: 'VIP Pass', price: 300000, quota: 50, sold: 45, description: 'Lunch + Private Lounge + Certificate' },
-    { ticket_id: 2, ticket_type: 'Regular Pass', price: 150000, quota: 100, sold: 100, description: 'Main Hall Access + Expo Only' },
+    { id: 1, ticket_type: 'VIP Pass', price: 300000, quota: 50, sold: 45, description: 'Lunch + Private Lounge + Certificate' },
+    { id: 2, ticket_type: 'Regular Pass', price: 150000, quota: 100, sold: 100, description: 'Main Hall Access + Expo Only' },
   ],
   feedback: [
-    { feedback_id: 1, user_name: 'Andi Pratama', rating: 4, comment: 'Great event! The speaker sessions were very insightful and the venue is amazing. Highly recommend for any dev looking to grow their network.', created_at: '2025-05-20', reply: { replier_name: 'TechOrg Indonesia', content: 'Thank you Andi! See you there. We are glad you enjoyed the networking sessions.', replied_at: '2025-05-21' } },
+    { id: 1, user_name: 'Andi Pratama', rating: 4, comment: 'Great event! The speaker sessions were very insightful and the venue is amazing. Highly recommend for any dev looking to grow their network.', created_at: '2025-05-20', reply: { replier_name: 'TechOrg Indonesia', content: 'Thank you Andi! See you there. We are glad you enjoyed the networking sessions.', replied_at: '2025-05-21' } },
   ],
   avg_rating: 4.5,
   total_reviews: 24,
@@ -50,90 +50,79 @@ export default function EventDetailPage() {
   }, [id])
 
   const fetchEvent = async () => {
-  setLoading(true)
-
-  try {
-    const res = await eventsAPI.getById(id)
-
-    let tickets = []
-    let feedback = []
+    setLoading(true)
 
     try {
-      const ticketsRes = await ticketsAPI.getByEvent(id)
-      tickets = ticketsRes.data || []
+      const res = await eventsAPI.getById(id)
+
+      let tickets = []
+      let feedback = []
+
+      try {
+        const ticketsRes = await ticketsAPI.getByEvent(id)
+        tickets = ticketsRes.data || []
+      } catch (err) {
+        console.error('Failed loading tickets:', err)
+      }
+
+      try {
+        const feedbackRes = await feedbackAPI.getByEvent(id)
+        feedback = feedbackRes.data || []
+      } catch (err) {
+        console.error('Failed loading feedback:', err)
+      }
+
+      setEvent({
+        ...res.data,
+        tickets,
+        feedback,
+      })
     } catch (err) {
-      console.error('Failed loading tickets:', err)
+      console.error('Failed loading event:', err)
+
+      setEvent({
+        title: 'Event Not Found',
+        description: 'The requested event could not be loaded.',
+        tickets: [],
+        feedback: [],
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegister = async () => {
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    if (!selectedTicket) {
+      alert('Please select a ticket first')
+      return
     }
 
     try {
-      const feedbackRes = await feedbackAPI.getByEvent(id)
-      feedback = feedbackRes.data || []
-    } catch (err) {
-      console.error('Failed loading feedback:', err)
+      const payload = {
+        event_id: Number(id),
+        ticket_id: Number(selectedTicket.id),
+      }
+
+      const res = await registrationsAPI.register(payload)
+
+      const registrationId = res.data.id
+
+      window.location.href = `/user/payment/${registrationId}`
+
+    } catch (e) {
+      console.error(e.response?.data)
+
+      alert(
+        e.response?.data?.detail ||
+        'Registration failed'
+      )
     }
-
-    setEvent({
-      ...res.data,
-      tickets,
-      feedback,
-    })
-  } catch (err) {
-    console.error('Failed loading event:', err)
-
-    setEvent({
-      title: 'Event Not Found',
-      description: 'The requested event could not be loaded.',
-      tickets: [],
-      feedback: [],
-    })
-  } finally {
-    setLoading(false)
   }
-}
-
-  // const handleRegister = async () => {
-  //   if (!user) { window.location.href = '/login'; return }
-  //   if (!selectedTicket) { alert('Please select a ticket first'); return }
-  //   try {
-  //     await registrationsAPI.register({ event_id: id, ticket_id: selectedTicket.ticket_id })
-  //     alert('Registration successful! Check your bookings.')
-  //   } catch (e) {
-  //     alert(e.response?.data?.detail || 'Registration failed.')
-  //   }
-  // }
-
-const handleRegister = async () => {
-  if (!user) {
-    window.location.href = '/login'
-    return
-  }
-
-  if (!selectedTicket) {
-    alert('Please select a ticket first')
-    return
-  }
-
-  try {
-    const payload = {
-      event_id: Number(id),
-      ticket_id: Number(selectedTicket.id),
-    }
-
-    const res = await registrationsAPI.register(payload)
-
-    const registrationId = res.data.id
-
-    window.location.href = `/user/payment/${registrationId}`
-
-  } catch (e) {
-    console.error(e.response?.data)
-
-    alert(
-      e.response?.data?.detail ||
-      'Registration failed'
-    )
-  }
-}
 
   const total = selectedTicket ? selectedTicket.price : 0
   const available = selectedTicket ? selectedTicket.quota - selectedTicket.sold : null
@@ -240,10 +229,10 @@ const handleRegister = async () => {
                         {event.tickets.map((ticket) => {
                           const remaining = ticket.quota - ticket.sold
                           const isSoldOut = remaining <= 0
-                          const isSelected = selectedTicket?.ticket_id === ticket.ticket_id
+                          const isSelected = selectedTicket?.id === ticket.id
 
                           return (
-                            <tr key={ticket.ticket_id} className={`hover:bg-surface-container-low transition-colors ${isSoldOut ? 'opacity-60' : ''}`}>
+                            <tr key={ticket.id} className={`hover:bg-surface-container-low transition-colors ${isSoldOut ? 'opacity-60' : ''}`}>
                               <td className="px-lg py-lg">
                                 <p className={`text-body-lg font-bold ${isSoldOut ? 'text-outline' : ''}`}>{ticket.ticket_type}</p>
                                 {ticket.description && <p className="text-label-md text-outline">{ticket.description}</p>}
@@ -299,7 +288,7 @@ const handleRegister = async () => {
 
                 <div className="space-y-md">
                   {(event.feedback || []).map((fb) => (
-                    <div key={fb.feedback_id} className="p-lg bg-surface-container-low rounded-xl">
+                    <div key={fb.id} className="p-lg bg-surface-container-low rounded-xl">
                       <div className="flex items-center justify-between mb-sm">
                         <div className="flex items-center gap-md">
                           <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">

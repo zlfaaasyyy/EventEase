@@ -84,10 +84,15 @@ export const registrationsAPI = {
 }
 
 // ─── Payments ───────────────────────────────────────────
+// Flow pembayaran 2 tahap:
+//   1. pay()     -> POST /payments        -> buat payment dgn status "pending"
+//   2. confirm() -> PATCH /payments/{id}/confirm -> baru di sini status jadi "paid"
+//                   dan registrasi jadi "confirmed" (tiket resmi terbit)
 export const paymentsAPI = {
   pay:          (data)      => api.post('/payments', data),
   getMyPayments:(params)    => api.get('/payments/me', { params }),
   getById:      (id)        => api.get(`/payments/${id}`),
+  confirm:      (id)        => api.patch(`/payments/${id}/confirm`),
   retry:        (id)        => api.patch(`/payments/${id}/retry`),
   updateStatus: (id, data)  => api.patch(`/organizer/payments/${id}/status`, data),
 }

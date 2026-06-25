@@ -70,27 +70,82 @@ def make_payment(
             detail="This registration has already been paid"
         )
 
+    existing_pending = db.query(Payment).filter(
+        Payment.registration_id == registration.id,
+        Payment.payment_status == "pending"
+    ).first()
+
+    if existing_pending:
+        # User already started a payment for this registration (e.g. switched
+        # method or re-opened the page) -- resume it instead of creating a duplicate.
+        existing_pending.payment_method = payload.payment_method
+        db.commit()
+        db.refresh(existing_pending)
+        return existing_pending
+
     ticket = db.query(Ticket).filter(Ticket.id == registration.ticket_id).first()
 
     amount = ticket.price if ticket else 0
 
-    # NOTE: In this academic project, payment is simulated and marked as
-    # "paid" immediately since there is no real payment gateway integration.
+    # The payment starts as "pending". The registration is NOT confirmed yet
+    # and the official ticket is NOT issued until the user explicitly confirms
+    # the payment via /payments/{id}/confirm -- simulating a real-world
+    # payment flow (transfer first, confirm after).
     new_payment = Payment(
         registration_id=registration.id,
         amount=amount,
         payment_method=payload.payment_method,
-        payment_status="paid"
+        payment_status="pending"
     )
 
     db.add(new_payment)
-
-    registration.status = "confirmed"
 
     db.commit()
     db.refresh(new_payment)
 
     return new_payment
+
+
+# ---------- User: Confirm a pending payment (simulates completing payment) ----------
+
+@router.patch("/payments/{payment_id}/confirm", response_model=PaymentResponse)
+def confirm_payment(
+    payment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+
+    if not payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found"
+        )
+
+    registration = db.query(Registration).filter(
+        Registration.id == payment.registration_id
+    ).first()
+
+    if registration.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to confirm this payment"
+        )
+
+    if payment.payment_status != "pending":
+        raise HTTPException(
+            status_code=400,
+            detail="Only pending payments can be confirmed"
+        )
+
+    payment.payment_status = "paid"
+    registration.status = "confirmed"
+
+    db.commit()
+    db.refresh(payment)
+
+    return payment
 
 
 # ---------- User: View own payment / transaction history ----------
@@ -175,8 +230,7 @@ def retry_payment(
             detail="Only failed payments can be retried"
         )
 
-    payment.payment_status = "paid"
-    registration.status = "confirmed"
+    payment.payment_status = "pending"
 
     db.commit()
     db.refresh(payment)

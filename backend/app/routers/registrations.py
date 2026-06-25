@@ -3,6 +3,7 @@ from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Query
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload
 from typing import Optional
 
 from app.database import get_db
@@ -13,6 +14,7 @@ from app.models.User import User
 from app.schemas.Registration import RegistrationCreate
 from app.schemas.Registration import RegistrationStatusUpdate
 from app.schemas.Registration import RegistrationResponse
+from app.schemas.Registration import RegistrationDetailResponse
 from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_organizer_or_admin
 
@@ -92,14 +94,17 @@ def register_for_event(
 
 # ---------- User: View own registrations ----------
 
-@router.get("/registrations/me", response_model=list[RegistrationResponse])
+@router.get("/registrations/me", response_model=list[RegistrationDetailResponse])
 def list_my_registrations(
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
 
-    query = db.query(Registration).filter(
+    query = db.query(Registration).options(
+        joinedload(Registration.event),
+        joinedload(Registration.ticket)
+    ).filter(
         Registration.user_id == current_user.id
     )
 
@@ -111,14 +116,17 @@ def list_my_registrations(
     return registrations
 
 
-@router.get("/registrations/{registration_id}", response_model=RegistrationResponse)
+@router.get("/registrations/{registration_id}", response_model=RegistrationDetailResponse)
 def get_registration_detail(
     registration_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
 
-    registration = db.query(Registration).filter(
+    registration = db.query(Registration).options(
+        joinedload(Registration.event),
+        joinedload(Registration.ticket)
+    ).filter(
         Registration.id == registration_id
     ).first()
 

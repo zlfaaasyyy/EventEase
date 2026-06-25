@@ -33,6 +33,7 @@ export default function CreateEventPage() {
     location: '',
     category_id: '',
     status: 'draft',
+    banner_url: '',
   })
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function CreateEventPage() {
         description: form.description,
         location: form.location,
         category_id: form.category_id ? Number(form.category_id) : null,
+        banner_url: form.banner_url || null,
         start_date: new Date(form.start_date).toISOString(),
         end_date: form.end_date ? new Date(form.end_date).toISOString() : new Date(form.start_date).toISOString(),
         status: form.status,
@@ -135,6 +137,27 @@ export default function CreateEventPage() {
                 <input name="location" required placeholder="e.g., Jakarta Convention Center" value={form.location} onChange={handleChange}
                   className="w-full pl-xl pr-md py-md bg-surface border border-outline-variant rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-body-md" />
               </div>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="text-label-md text-on-surface-variant block">Banner Image URL</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline text-[18px]">image</span>
+                <input name="banner_url" type="url" placeholder="https://example.com/your-event-banner.jpg" value={form.banner_url} onChange={handleChange}
+                  className="w-full pl-xl pr-md py-md bg-surface border border-outline-variant rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-body-md" />
+              </div>
+              <p className="text-label-sm text-outline">Paste a link to an image. This appears as the event's thumbnail and banner.</p>
+              {form.banner_url && (
+                <div className="mt-sm rounded-lg overflow-hidden border border-outline-variant h-32 bg-surface-container-low">
+                  <img
+                    src={form.banner_url}
+                    alt="Banner preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.style.display = 'none' }}
+                    onLoad={(e) => { e.target.style.display = 'block' }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">

@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from fastapi import Query
 from sqlalchemy.orm import Session
 from typing import Optional
+from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.models.Registration import Registration
@@ -104,6 +105,30 @@ def make_payment(
     db.refresh(new_payment)
 
     return new_payment
+
+@router.get("/payments/my")
+def get_my_payments(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    payments = (
+        db.query(Payment)
+        .options(
+            joinedload(Payment.registration)
+            .joinedload(Registration.event),
+
+            joinedload(Payment.registration)
+            .joinedload(Registration.ticket)
+        )
+        .join(Registration)
+        .filter(
+            Registration.user_id == current_user.id
+        )
+        .all()
+    )
+
+    return payments
 
 
 # ---------- User: Confirm a pending payment (simulates completing payment) ----------

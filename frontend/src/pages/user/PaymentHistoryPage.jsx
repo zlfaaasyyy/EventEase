@@ -1,58 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar'
-import Footer from '../../components/layout/Footer'
+import DashboardLayout from '../../components/layout/DashboardLayout'
 import { paymentsAPI } from '../../services/api'
 
-const MOCK_PAYMENTS = [
-  {
-    payment_id: 1,
-    registration_id: 1,
-    event_title: 'Tech Summit 2025',
-    ticket_type: 'VIP Pass',
-    amount: 300000,
-    payment_method: 'Bank Transfer',
-    payment_status: 'paid',
-    transaction_date: '2025-04-10T10:30:00',
-  },
-  {
-    payment_id: 2,
-    registration_id: 2,
-    event_title: 'Python Bootcamp',
-    ticket_type: 'Regular Pass',
-    amount: 150000,
-    payment_method: 'QRIS',
-    payment_status: 'paid',
-    transaction_date: '2025-05-01T14:00:00',
-  },
-  {
-    payment_id: 3,
-    registration_id: 3,
-    event_title: 'UI/UX Workshop',
-    ticket_type: 'Student Pass',
-    amount: 75000,
-    payment_method: 'Virtual Account',
-    payment_status: 'pending',
-    transaction_date: '2025-05-20T09:15:00',
-  },
-  {
-    payment_id: 4,
-    registration_id: 4,
-    event_title: 'Digital Marketing Seminar',
-    ticket_type: 'Regular Pass',
-    amount: 0,
-    payment_method: '-',
-    payment_status: 'free',
-    transaction_date: '2025-06-01T08:00:00',
-  },
-]
-
 const STATUS_PILL = {
-  paid: 'bg-primary-fixed text-primary',
-  pending: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
-  failed: 'bg-error-container text-error',
-  refunded: 'bg-surface-container-highest text-outline',
-  free: 'bg-secondary-fixed text-secondary',
+  paid: 'bg-green-100 text-green-700',
+  pending: 'bg-yellow-100 text-yellow-700',
+  failed: 'bg-red-100 text-red-700',
+  refunded: 'bg-gray-100 text-gray-700',
+  free: 'bg-blue-100 text-blue-700',
 }
 
 const STATUS_ICON = {
@@ -64,163 +20,323 @@ const STATUS_ICON = {
 }
 
 export default function PaymentHistoryPage() {
-  const [payments, setPayments] = useState(MOCK_PAYMENTS)
+  const [payments, setPayments] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setLoading(true)
-    // Try fetching from API, fallback to mock
-    setTimeout(() => {
-      setPayments(MOCK_PAYMENTS)
-      setLoading(false)
-    }, 300)
+    const fetchPayments = async () => {
+      try {
+        setLoading(true)
+
+        const response = await paymentsAPI.getMyPayments()
+
+        const formattedPayments = response.data.map(payment => ({
+          payment_id: payment.id,
+          registration_id: payment.registration_id,
+
+          event_title:
+            payment.registration?.event?.title ||
+            'Unknown Event',
+
+          ticket_type:
+            payment.registration?.ticket?.ticket_type ||
+            'Regular Ticket',
+
+          amount: payment.amount,
+
+          payment_method:
+            payment.payment_method || '-',
+
+          payment_status:
+            payment.payment_status,
+
+          transaction_date:
+            payment.transaction_date ||
+            new Date().toISOString()
+        }))
+
+        setPayments(formattedPayments)
+
+      } catch (error) {
+        console.log(error)
+        setPayments([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPayments()
   }, [])
 
-  const filtered = payments.filter(p =>
-    filter === 'all' || p.payment_status === filter
+  const filtered = payments.filter(
+    p => filter === 'all' || p.payment_status === filter
   )
 
   const totalPaid = payments
     .filter(p => p.payment_status === 'paid')
-    .reduce((s, p) => s + p.amount, 0)
+    .reduce((sum, p) => sum + p.amount, 0)
+
+  const pendingCount = payments.filter(
+    p => p.payment_status === 'pending'
+  ).length
 
   return (
-    <div className="bg-background min-h-screen flex flex-col">
-      <Navbar />
+    <DashboardLayout role="user">
 
-      <main className="pt-16 flex-1">
+      <div className="p-8 bg-background min-h-screen">
+
         {/* Header */}
-        <div className="bg-surface border-b border-outline-variant py-xl px-lg">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-headline-lg text-on-surface font-bold">Payment History</h1>
-            <p className="text-body-md text-on-surface-variant mt-xs">Riwayat semua transaksi pembayaran tiket kamu.</p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold">
+            Transaction History
+          </h1>
+
+          <p className="text-on-surface-variant mt-2">
+            Manage your payments and receipts
+          </p>
         </div>
 
-        <div className="max-w-4xl mx-auto px-lg py-xl space-y-xl">
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-lg">
-            <div className="bg-surface rounded-xl p-lg border border-outline-variant shadow-sm">
-              <p className="text-body-md text-on-surface-variant mb-sm">Total Transaksi</p>
-              <p className="text-headline-md font-bold text-on-surface">{payments.length}</p>
-            </div>
-            <div className="bg-surface rounded-xl p-lg border border-outline-variant shadow-sm">
-              <p className="text-body-md text-on-surface-variant mb-sm">Total Dibayar</p>
-              <p className="text-headline-md font-bold text-primary">Rp{totalPaid.toLocaleString('id-ID')}</p>
-            </div>
-            <div className="bg-surface rounded-xl p-lg border border-outline-variant shadow-sm">
-              <p className="text-body-md text-on-surface-variant mb-sm">Menunggu Bayar</p>
-              <p className="text-headline-md font-bold text-on-tertiary-fixed-variant">
-                {payments.filter(p => p.payment_status === 'pending').length}
-              </p>
-            </div>
+
+        {/* Stats */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+
+          <div className="bg-surface rounded-xl border p-6 shadow-sm">
+            <p className="text-sm text-gray-500 mb-2">
+              TOTAL TRANSACTIONS
+            </p>
+
+            <p className="text-3xl font-bold">
+              {payments.length}
+            </p>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex gap-sm bg-surface-container-low rounded-xl p-xs w-fit">
-            {[
-              { key: 'all', label: 'Semua' },
-              { key: 'paid', label: 'Lunas' },
-              { key: 'pending', label: 'Pending' },
-              { key: 'refunded', label: 'Refund' },
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                className={`px-lg py-2 rounded-lg font-bold text-label-md transition-all ${
-                  filter === tab.key
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'text-on-surface-variant hover:bg-surface-container-high'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="bg-surface rounded-xl border p-6 shadow-sm">
+            <p className="text-sm text-gray-500 mb-2">
+              TOTAL SPENT
+            </p>
+
+            <p className="text-3xl font-bold text-primary">
+              Rp{totalPaid.toLocaleString('id-ID')}
+            </p>
           </div>
 
-          {/* Payment list */}
-          <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="divide-y divide-outline-variant">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="p-lg animate-pulse flex gap-lg">
-                    <div className="w-12 h-12 rounded-xl bg-surface-container-high" />
-                    <div className="flex-1 space-y-sm">
-                      <div className="h-4 bg-surface-container-high rounded w-1/2" />
-                      <div className="h-3 bg-surface-container-high rounded w-1/3" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-xl">
-                <span className="material-symbols-outlined text-[48px] text-outline">receipt_long</span>
-                <p className="text-body-md text-on-surface-variant mt-md">Tidak ada riwayat pembayaran.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-outline-variant">
-                {filtered.map(payment => (
-                  <div key={payment.payment_id} className="p-lg flex flex-col sm:flex-row sm:items-center gap-lg hover:bg-surface-container-low transition-colors">
-                    {/* Icon */}
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${STATUS_PILL[payment.payment_status]}`}>
-                      <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        {STATUS_ICON[payment.payment_status]}
-                      </span>
-                    </div>
+          <div className="bg-surface rounded-xl border p-6 shadow-sm">
+            <p className="text-sm text-gray-500 mb-2">
+              PENDING PAYMENTS
+            </p>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-body-md font-bold text-on-surface">{payment.event_title}</p>
-                      <div className="flex flex-wrap gap-md mt-xs">
-                        <span className="text-label-sm text-on-surface-variant flex items-center gap-xs">
-                          <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
-                          {payment.ticket_type}
-                        </span>
-                        <span className="text-label-sm text-on-surface-variant flex items-center gap-xs">
-                          <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                          {new Date(payment.transaction_date).toLocaleDateString('id-ID', {
-                            day: 'numeric', month: 'long', year: 'numeric'
-                          })}
-                        </span>
-                        {payment.payment_method !== '-' && (
-                          <span className="text-label-sm text-on-surface-variant flex items-center gap-xs">
-                            <span className="material-symbols-outlined text-[14px]">payment</span>
-                            {payment.payment_method}
-                          </span>
-                        )}
+            <p className="text-3xl font-bold">
+              {pendingCount}
+            </p>
+          </div>
+
+        </div>
+
+
+        {/* Filter */}
+        <div className="flex gap-3 mb-8">
+
+          {[
+            {key:'all',label:'All'},
+            {key:'paid',label:'Paid'},
+            {key:'pending',label:'Pending'},
+            {key:'failed',label:'Failed'}
+          ].map(item=>(
+            <button
+              key={item.key}
+              onClick={()=>setFilter(item.key)}
+              className={`px-5 py-2 rounded-lg transition
+              ${
+                filter===item.key
+                ? 'bg-primary text-white'
+                : 'bg-gray-100'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+
+        </div>
+
+
+        {/* Table */}
+
+        <div className="bg-surface rounded-xl border overflow-hidden">
+
+          <table className="w-full">
+
+            <thead className="bg-gray-50">
+
+              <tr className="text-left">
+
+                <th className="p-4">
+                  Event
+                </th>
+
+                <th className="p-4">
+                  Amount
+                </th>
+
+                <th className="p-4">
+                  Method
+                </th>
+
+                <th className="p-4">
+                  Status
+                </th>
+
+                <th className="p-4">
+                  Date
+                </th>
+
+                <th className="p-4">
+                  Information
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {loading ? (
+
+                <tr>
+
+                  <td
+                    colSpan="6"
+                    className="p-8 text-center"
+                  >
+                    Loading...
+                  </td>
+
+                </tr>
+
+              ) : filtered.length===0 ? (
+
+                <tr>
+
+                  <td
+                    colSpan="6"
+                    className="p-8 text-center"
+                  >
+                    No payment history found
+                  </td>
+
+                </tr>
+
+              ) : (
+
+                filtered.map(payment=>(
+
+                  <tr
+                    key={payment.payment_id}
+                    className="border-t hover:bg-gray-50"
+                  >
+
+                    <td className="p-4">
+
+                      <div className="font-bold">
+                        {payment.event_title}
                       </div>
-                    </div>
 
-                    {/* Amount + status */}
-                    <div className="flex sm:flex-col items-center sm:items-end gap-md shrink-0">
-                      <p className="text-title-lg font-bold text-on-surface">
-                        {payment.amount === 0 ? (
-                          <span className="text-secondary">Free</span>
-                        ) : `Rp${payment.amount.toLocaleString('id-ID')}`}
-                      </p>
-                      <span className={`px-sm py-1 text-label-sm rounded-full font-bold capitalize ${STATUS_PILL[payment.payment_status]}`}>
+                      <div className="text-sm text-gray-500">
+                        {payment.ticket_type}
+                      </div>
+
+                    </td>
+
+                    <td className="p-4 font-semibold">
+
+                      Rp{payment.amount.toLocaleString('id-ID')}
+
+                    </td>
+
+                    <td className="p-4">
+
+                      {payment.payment_method}
+
+                    </td>
+
+                    <td className="p-4">
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_PILL[payment.payment_status]}`}
+                      >
                         {payment.payment_status}
                       </span>
-                    </div>
 
-                    {/* Action if pending */}
-                    {payment.payment_status === 'pending' && (
-                      <Link to={`/user/payment/${payment.registration_id}`}>
-                        <button className="px-lg py-2 bg-primary text-on-primary text-label-md font-bold rounded-lg hover:opacity-90 transition-all shrink-0">
-                          Bayar Sekarang
-                        </button>
-                      </Link>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    </td>
+
+                    <td className="p-4">
+
+                      {
+                        new Date(
+                          payment.transaction_date
+                        ).toLocaleDateString(
+                          'id-ID'
+                        )
+                      }
+
+                    </td>
+
+                    <td className="p-4">
+
+                      {payment.payment_status === 'pending' && (
+                        <Link
+                          to={`/user/payment/${payment.registration_id}`}
+                        >
+                          <button
+                            className="px-4 py-2 bg-primary
+                            text-white rounded-lg hover:opacity-90"
+                          >
+                            Complete Payment
+                          </button>
+                        </Link>
+                      )}
+
+                      {payment.payment_status === 'paid' && (
+                        <span
+                          className="text-sm text-green-600 font-medium"
+                        >
+                          Payment Completed
+                        </span>
+                      )}
+
+                      {payment.payment_status === 'failed' && (
+                        <span
+                          className="text-sm text-red-600 font-medium"
+                        >
+                          Payment Failed
+                        </span>
+                      )}
+
+                      {payment.payment_status === 'refunded' && (
+                        <span
+                          className="text-sm text-gray-500 font-medium"
+                        >
+                          Refunded
+                        </span>
+                      )}
+
+                    </td>
+
+                  </tr>
+
+                ))
+
+              )}
+
+            </tbody>
+
+          </table>
+
         </div>
-      </main>
 
-      <Footer />
-    </div>
+      </div>
+
+    </DashboardLayout>
   )
 }

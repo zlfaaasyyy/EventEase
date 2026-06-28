@@ -90,7 +90,7 @@ export const registrationsAPI = {
 //                   dan registrasi jadi "confirmed" (tiket resmi terbit)
 export const paymentsAPI = {
   pay:          (data)      => api.post('/payments', data),
-  getMyPayments:(params)    => api.get('/payments/me', { params }),
+  getMyPayments:(params)    => api.get('/payments/my', { params }),
   getById:      (id)        => api.get(`/payments/${id}`),
   confirm:      (id)        => api.patch(`/payments/${id}/confirm`),
   retry:        (id)        => api.patch(`/payments/${id}/retry`),

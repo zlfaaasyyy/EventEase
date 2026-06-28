@@ -21,7 +21,6 @@ import OrganizerDashboard from './pages/organizer/OrganizerDashboard'
 import CreateEventPage from './pages/organizer/CreateEventPage'
 import ManageTicketsPage from './pages/organizer/ManageTicketsPage'
 import RegistrationsListPage from './pages/organizer/RegistrationsListPage'
-import ManageAttendancePage from './pages/organizer/ManageAttendancePage'
 import EventFeedbackPage from './pages/organizer/EventFeedbackPage'
 import OrganizerReportsPage from './pages/organizer/OrganizerReportsPage'
 import OrganizerProfilePage from './pages/organizer/OrganizerProfilePage'
@@ -36,8 +35,26 @@ import AdminEventsPage from './pages/admin/AdminEventsPage'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()
-  if (!user) return <Navigate to="/login" replace />
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" replace />
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+
+    if (user.role === "user") {
+      return <Navigate to="/user" replace />
+    }
+
+    if (user.role === "organizer") {
+      return <Navigate to="/organizer" replace />
+    }
+
+    if (user.role === "admin") {
+      return <Navigate to="/admin" replace />
+    }
+  }
+
   return children
 }
 
@@ -109,11 +126,6 @@ function AppRoutes() {
           <RegistrationsListPage />
         </ProtectedRoute>
       } />
-      <Route path="/organizer/events/:id/attendance" element={
-        <ProtectedRoute allowedRoles={['organizer']}>
-          <ManageAttendancePage />
-        </ProtectedRoute>
-      } />
       <Route path="/organizer/events/:id/feedback" element={
         <ProtectedRoute allowedRoles={['organizer']}>
           <EventFeedbackPage />
@@ -163,7 +175,7 @@ function AppRoutes() {
       } />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/user" replace />} />
     </Routes>
   )
 }
